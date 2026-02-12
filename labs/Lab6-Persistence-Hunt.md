@@ -226,8 +226,3 @@ THEN → HIGH: Suspicious Service Binary Path
 6. Redundant persistence = attacker expects detection of one
 ```
 
----
-
-**Commit message:**
-```
-Add Lab 6: Persistence Mechanism Detection
