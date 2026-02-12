@@ -206,6 +206,10 @@ THEN → HIGH: Suspicious Local Interactive Login
 
 ---
 
+## Screenshots
+
+![RDP Lateral Movement - Auth Events](../screenshots/lab5-rdp-lateral-movement.png)
+
 ## Lessons Learned
 
 1. **4648 = red flag always** — explicit creds rarely legitimate
