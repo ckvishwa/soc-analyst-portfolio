@@ -12,7 +12,30 @@ Simulate post-exploitation reconnaissance commands and detect
 them using Sysmon EventCode=1 (Process Create) in Splunk.
 
 ---
+## Analyst Narrative
 
+While reviewing Sysmon logs in Splunk, I noticed a cluster of 
+reconnaissance commands executed within a 21-minute window. 
+What caught my attention wasn't any single command — it was 
+the pattern.
+
+First, NT AUTHORITY\SYSTEM ran ipconfig /renew at 04:16 AM. 
+Fifteen minutes later, user "Aura" began manual recon from 
+cmd.exe with elevated privileges. Two different accounts 
+running network discovery commands in the same window 
+suggested either privilege escalation or a dual foothold 
+on the system.
+
+My investigation focused on:
+1. Correlating both accounts to the same session
+2. Identifying the parent process chain
+3. Determining if this was IT activity or attacker behavior
+4. Building a detection rule to catch this pattern automatically
+
+Key decision point: Individual commands like whoami or ipconfig 
+are normal admin activity. The combination of 6+ commands, 
+elevated privileges, off-hours timing, and two account types 
+in 21 minutes = high confidence malicious recon.
 ## Attack Simulation
 
 Commands executed on Windows VM:
