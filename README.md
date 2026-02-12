@@ -76,10 +76,3 @@ Initial Access
 
 ## Contact
 [LinkedIn](#) • [Email](#) • Open to SOC Analyst opportunities
-```
-
----
-
-**Commit message:**
-```
-Upgrade README with full portfolio showcase
