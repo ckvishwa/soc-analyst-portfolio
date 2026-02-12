@@ -5,7 +5,7 @@
 ![Windows](https://img.shields.io/badge/OS-Windows%2010-blue)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
-**Vishva Teja Chikoti** | Cybersecurity Professional | SOC Analyst
+**Vishva Teja Chikoti** | Cybersecurity  | SOC Analyst
 
 > Real attacks simulated on Windows VM, detected using Sysmon + Splunk.
 > Each lab documents the full attack chain: simulation → detection → analysis → response.
