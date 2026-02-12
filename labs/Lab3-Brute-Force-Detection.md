@@ -130,6 +130,23 @@ THEN → CRITICAL alert: Brute Force SUCCEEDED
 
 ---
 
+## Critical Detail: Internal Attack Indicator
+
+Full event analysis revealed:
+- Caller Process: svchost.exe (attacker hiding in legit process)
+- Source Network Address: ::1 (localhost = internal origin)
+
+This is NOT an external brute force attack.
+Attacker already has access to the machine and is attempting
+to compromise additional accounts from inside.
+
+Attack chain so far:
+1. Lab 1: Attacker runs recon (whoami, ipconfig, systeminfo)
+2. Lab 2: Attacker runs malicious PowerShell (download, encode, harvest)
+3. Lab 3: Attacker brute forces local accounts from inside machine
+
+This is a complete post-exploitation sequence.
+
 ## False Positives
 
 | Scenario | Mitigation |
