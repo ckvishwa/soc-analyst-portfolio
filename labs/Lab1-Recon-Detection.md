@@ -16,4 +16,115 @@ them using Sysmon EventCode=1 (Process Create) in Splunk.
 ## Attack Simulation
 
 Commands executed on Windows VM:
-Cmd
+```powershell
+whoami
+ipconfig
+systeminfo
+net user
+net localgroup administrators
+netstat -ano
+tasklist
+reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+```
+
+**Why attackers run these:**
+| Command | Attacker Purpose |
+|---------|-----------------|
+| whoami | Confirm user context |
+| ipconfig | Map network layout |
+| systeminfo | OS version, patch level |
+| net user | List accounts to target |
+| net localgroup administrators | Find admin accounts |
+| netstat -ano | Spot active connections |
+| tasklist | Detect AV/EDR processes |
+| reg query | Find persistence paths |
+
+---
+
+## Detection
+
+**Splunk Query:**
+```
+index=main EventCode=1
+| search CommandLine="*whoami*" 
+  OR CommandLine="*net user*" 
+  OR CommandLine="*ipconfig*" 
+  OR CommandLine="*systeminfo*" 
+  OR CommandLine="*net localgroup*" 
+  OR CommandLine="*netstat*" 
+  OR CommandLine="*tasklist*" 
+  OR CommandLine="*reg query*"
+| table _time, User, CommandLine, ParentImage, IntegrityLevel
+| sort _time
+```
+
+---
+
+## Findings
+
+**Timeline:** 04:16 AM - 04:37 AM (21 minute window)
+
+| Time | User | Command | Integrity |
+|------|------|---------|-----------|
+| 04:16:54 | NT AUTHORITY\SYSTEM | ipconfig /renew | System |
+| 04:31:57 | DESKTOP-G908C2D\Aura | whoami | High |
+| 04:32:01 | DESKTOP-G908C2D\Aura | ipconfig | High |
+| 04:32:23 | DESKTOP-G908C2D\Aura | systeminfo | High |
+| 04:37:13 | DESKTOP-G908C2D\Aura | netstat -ano | High |
+| 04:37:17 | DESKTOP-G908C2D\Aura | tasklist | High |
+
+**Key Observations:**
+- Two users involved: SYSTEM + Aura
+- All commands spawned from cmd.exe
+- IntegrityLevel: High = elevated privileges
+- Commands within 21 min = scripted/manual recon session
+- SYSTEM ran ipconfig 15 min before Aura = possible dual foothold
+
+---
+
+## MITRE ATT&CK Mapping
+
+| Technique ID | Name | Command |
+|-------------|------|---------|
+| T1033 | System Owner/User Discovery | whoami |
+| T1016 | System Network Configuration Discovery | ipconfig |
+| T1082 | System Information Discovery | systeminfo |
+| T1087 | Account Discovery | net user |
+| T1049 | System Network Connections Discovery | netstat |
+| T1057 | Process Discovery | tasklist |
+| T1012 | Query Registry | reg query |
+
+---
+
+## Alert Rule Logic
+```
+IF same user runs 3+ recon commands
+WITHIN 10 minute window
+FROM cmd.exe OR powershell.exe
+THEN → HIGH alert: Post-Exploitation Recon Detected
+```
+
+---
+
+## False Positives
+
+| Scenario | Mitigation |
+|----------|------------|
+| IT admin troubleshooting | Whitelist IT admin accounts |
+| Helpdesk diagnostics | Whitelist during business hours |
+| Automated monitoring scripts | Whitelist known script hashes |
+
+---
+
+## Screenshots
+![Recon Timeline](../screenshots/lab1-recon-timeline.png)
+![Event Detail](../screenshots/lab1-whoami-detail.png)
+
+---
+
+## Lessons Learned
+- Individual recon commands = low signal
+- Same user, multiple commands, short window = HIGH signal
+- SYSTEM + user account recon together = escalation indicator
+- Parent process matters: cmd.exe vs powershell.exe vs explorer.exe
+```
