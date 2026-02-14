@@ -240,8 +240,8 @@ attacker already has internal foothold. Lateral movement risk elevated.
 ---
 
 ## Screenshots
-![Jira Ticket SOC-001](./evidence/jira-ticket-SOC-001.png)
-![Jira Board View](./evidence/jira-queue-view.png)
+![Jira Ticket SOC-001](./screenshots/jira-ticket-SOC-001.png)
+![Jira Board View](./screenshots/jira-queue-view.png)
 ![Brute Force Timeline](../screenshots/lab3-brute-force-timeline.png)
 ![Brute Force Detail](../screenshots/lab3-brute-force-detail.png)
 
