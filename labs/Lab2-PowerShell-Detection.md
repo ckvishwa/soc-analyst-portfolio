@@ -13,7 +13,10 @@ post-exploitation. Detect and classify each technique using
 Sysmon EventCode=1 in Splunk.
 
 ---
-
+## NIST SP 800-61 Incident Response Phase
+> **Phase 2: Detection & Analysis**
+> Malicious PowerShell execution detected via Sysmon Event ID 1.
+> Process injection via RuntimeBroker.exe confirmed. Severity: CRITICAL.
 ## Analyst Narrative
 
 During investigation I noticed PowerShell being launched
