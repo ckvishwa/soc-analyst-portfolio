@@ -13,6 +13,11 @@ Detect registry-based persistence using Sysmon EventCode=13
 (Registry Value Set) in Splunk. Identify and classify
 multiple simultaneous persistence techniques.
 
+## NIST SP 800-61 Incident Response Phase
+> **Phase 3: Containment & Eradication → Phase 4: Recovery**
+> Three simultaneous persistence mechanisms identified and documented.
+> Run Key + Fake Service + Winlogon hijack. Severity: CRITICAL.
+
 ---
 
 ## Lab Setup
