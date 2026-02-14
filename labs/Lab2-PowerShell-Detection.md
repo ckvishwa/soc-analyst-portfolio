@@ -120,9 +120,63 @@ THEN → Alert: Suspicious PowerShell Execution
 | Windows updates | Whitelist SYSTEM + WindowsUpdate parent |
 
 ---
+## EDR Correlation — Windows Defender
 
+**Tool:** Windows Defender (Built-in EDR)
+**Event Source:** WinEventLog:Microsoft-Windows-Windows Defender/Operational
+
+| Field | Value |
+|---|---|
+| EventID | 1117 — Malware Action Taken |
+| Threat Name | Virus:DOS/EICAR_Test_File |
+| Severity | Severe |
+| Category | Virus |
+| File Path | C:\Users\Public\test-malware.txt |
+| Detection Origin | Local Machine |
+| Detection Source | Real-Time Protection |
+| Process | powershell.exe |
+| User | NT AUTHORITY\SYSTEM |
+| Action | Quarantine |
+| Action Status | No additional actions required |
+
+---
+
+### Splunk EDR Detection Query
+```splunk
+index=main source="WinEventLog:Microsoft-Windows-Windows Defender/Operational"
+EventCode=1116 OR EventCode=1117
+| table _time, EventCode, Message
+| sort -_time
+```
+
+---
+
+### SIEM + EDR Correlation
+
+| Source | Signal | Confidence |
+|---|---|---|
+| Sysmon (Event ID 1) | PowerShell process created | Medium |
+| Splunk Security | Process injection via RuntimeBroker.exe | High |
+| Windows Defender (1117) | Malware detected + quarantined | Confirmed |
+
+**Analyst Note:**
+EDR confirmed what SIEM flagged. Defender auto-quarantined payload
+via Real-Time Protection before execution completed.
+SIEM + EDR correlation = high-confidence verdict.
+Escalation to L2-IR justified.
+
+---
+
+### NIST SP 800-61 Phase
+> **Phase 3: Containment**
+> EDR automatically contained threat via quarantine.
+> SIEM + EDR signals correlated. No manual containment required.
+> 
 ## Screenshots
 ![PowerShell Detection Results](../screenshots/lab2-powershell-detected.png)
+![Defender 1117 Splunk](./evidence/defender-event-1117-splunk.png)
+![Defender Detail](./evidence/defender-event-1117-detail.png)
+![Splunk Query](./evidence/defender-splunk-query.png)
 
 ---
 
