@@ -11,6 +11,10 @@
 Simulate post-exploitation reconnaissance commands and detect
 them using Sysmon EventCode=1 (Process Create) in Splunk.
 
+## NIST SP 800-61 Incident Response Phase
+> **Phase 2: Detection & Analysis**
+> Reconnaissance activity identified via process creation logs.
+> Analyst confirmed dual-account foothold. Severity: HIGH.
 ---
 ## Analyst Narrative
 
