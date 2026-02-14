@@ -14,7 +14,10 @@ URLs, attachments, and authentication failures to determine
 malicious intent and take appropriate containment actions.
 
 ---
-
+## NIST SP 800-61 Incident Response Phase
+> **Phase 2: Detection & Analysis → Phase 3: Containment**
+> Phishing email triaged. Malicious attachment (pdf.exe) identified.
+> Base64 URL decoded to evil.com/steal. Severity: CRITICAL.
 ## Lab Setup
 
 | Component | Detail |
