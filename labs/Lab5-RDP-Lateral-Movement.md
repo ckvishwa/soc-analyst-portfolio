@@ -14,6 +14,10 @@ Security logs in Splunk. Identify attacker pivot patterns
 using EventCode correlation.
 
 ---
+## NIST SP 800-61 Incident Response Phase
+> **Phase 3: Containment & Eradication**
+> Lateral movement via stored credentials detected (EventID 4648).
+> cmdkey abuse confirmed. RDP pivot identified. Severity: HIGH.
 
 ## Lab Setup
 
