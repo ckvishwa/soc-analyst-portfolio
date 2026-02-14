@@ -13,6 +13,12 @@ Detect using Windows Security EventCode=4625 (Failed Logon) in Splunk.
 
 ---
 
+## NIST SP 800-61 Incident Response Phase
+> **Phase 2: Detection & Analysis**
+> Alert triaged, IOCs extracted, severity assessed, escalated to L2-IR.
+
+---
+
 ## Analyst Narrative
 
 While monitoring the security event logs, I noticed 10 failed
@@ -147,6 +153,8 @@ Attack chain so far:
 
 This is a complete post-exploitation sequence.
 
+---
+
 ## False Positives
 
 | Scenario | Mitigation |
@@ -157,17 +165,91 @@ This is a complete post-exploitation sequence.
 
 ---
 
+## 🎫 Ticketing & Case Management
+
+| Field | Value |
+|---|---|
+| **Ticket ID** | SOC-001 |
+| **Platform** | Jira Software (KAN Board) |
+| **Issue Type** | Security Incident |
+| **Priority** | High |
+| **Assigned To** | Vishva Teja Chikoti |
+| **Status** | Escalated to L2-IR |
+
+---
+
+### Incident Ticket — SOC-001
+
+**Summary:** Brute Force Login Attempt Detected — DESKTOP-G908C2D
+
+**Alert Source:** Splunk — Custom Brute Force Detection Rule
+**Endpoint:** DESKTOP-G908C2D
+**Detection Time:** 2026-02-12 03:45:22 UTC
+
+---
+
+### Timeline
+
+| Time (UTC) | Event |
+|---|---|
+| 03:45:22 | 10 failed logins in 5 seconds — EventID 4625 |
+| 03:45:22 | Source process: svchost.exe (localhost — internal) |
+| 03:45:28 | No successful login confirmed — EventID 4624 absent |
+| 03:45:30 | Alert triaged — Escalated to L2-IR |
+
+---
+
+### IOCs
+
+| Indicator | Value |
+|---|---|
+| Source IP | 127.0.0.1 (localhost) |
+| Source Process | svchost.exe |
+| Target Account | Aura / Administrator |
+| Failed Logins | 10 in 5 seconds |
+| Successful Login | None |
+
+---
+
+### Severity Assessment
+
+**Rating: HIGH**
+Attack originated from localhost via svchost.exe — indicates
+attacker already has internal foothold. Lateral movement risk elevated.
+
+---
+
+### Containment Actions
+
+- [x] Confirmed no successful authentication (4624 absent)
+- [x] svchost.exe flagged for behavioral analysis
+- [x] Alert documented and escalated to L2-IR with full handoff
+
+---
+
+### L2 Escalation Handoff Package
+
+| Field | Detail |
+|---|---|
+| **Scope** | Single endpoint — DESKTOP-G908C2D |
+| **IOCs** | 127.0.0.1, svchost.exe, Aura account |
+| **Timeline** | 03:45:22 — 03:45:30 UTC |
+| **Actions Taken** | Triage complete, no successful auth confirmed |
+| **Recommended Next** | Investigate svchost.exe parent process, check prior compromise |
+
+---
+
 ## Screenshots
+![Jira Ticket SOC-001](./evidence/jira-ticket-SOC-001.png)
+![Jira Board View](./evidence/jira-queue-view.png)
 ![Brute Force Timeline](../screenshots/lab3-brute-force-timeline.png)
 ![Brute Force Detail](../screenshots/lab3-brute-force-detail.png)
 
 ---
 
 ## Key Takeaway
-Speed kills detection logic. 10 attempts in 5 seconds = 
+Speed kills detection logic. 10 attempts in 5 seconds =
 impossible for human. Always check:
 1. How many attempts?
 2. How fast?
 3. Did any succeed? (4624 after 4625 = game over)
-```
-
