@@ -174,9 +174,9 @@ Escalation to L2-IR justified.
 > 
 ## Screenshots
 ![PowerShell Detection Results](../screenshots/lab2-powershell-detected.png)
-![Defender 1117 Splunk](./evidence/defender-event-1117-splunk.png)
-![Defender Detail](./evidence/defender-event-1117-detail.png)
-![Splunk Query](./evidence/defender-splunk-query.png)
+![Defender 1117 Splunk](../screenshots/defender-event-1117-splunk.png)
+![Defender Detail](../screenshots/defender-event-1117-detail.png)
+![Splunk Query](../screenshots/defender-splunk-query.png)
 
 ---
 
@@ -187,7 +187,5 @@ Parent process matters most:
 - RuntimeBroker.exe → PowerShell = almost always malicious
 - explorer.exe → PowerShell = investigate immediately
 ```
-
----
 
 
