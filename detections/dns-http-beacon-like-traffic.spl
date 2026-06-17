@@ -1,0 +1,56 @@
+| Detection Metadata                                                                    |
+| ------------------------------------------------------------------------------------- |
+| Detection Name    : DNS/HTTP Beacon-like Traffic                                      |
+| Detection ID      : DET-008                                                           |
+| MITRE Tactic      : Command & Control                                                 |
+| MITRE Technique   : T1071.001 (Web), T1071.004 (DNS)                                |
+| Severity          : Medium                                                            |
+| Data Sources      : Sysmon Event 22 (DNS), Sysmon Event 3 (Network)                 |
+
+================================================================================
+PRIMARY QUERY — HTTP Beacon Pattern (Periodic Connections)
+================================================================================
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+EventID=3
+NOT Image IN (
+    "*\\chrome.exe","*\\firefox.exe","*\\msedge.exe","*\\iexplore.exe",
+    "*\\OneDrive.exe","*\\MsMpEng.exe","*\\svchost.exe","*\\SearchApp.exe"
+)
+NOT DestinationIp IN ("192.168.10.0/24","127.0.0.1")
+| bucket _time span=1h
+| stats count AS conn_count,
+        dc(DestinationPort) AS port_variety,
+        values(DestinationPort) AS ports
+  BY _time, Image, DestinationIp, ComputerName
+| where conn_count >= 5 AND port_variety <= 2
+| eval detection="Beacon-like HTTP Traffic — Periodic Single-Dest Connections"
+| eval mitre="T1071.001"
+| eval severity="Medium"
+| sort -conn_count
+
+================================================================================
+SECONDARY QUERY — DNS Beacon Pattern (Periodic Queries)
+================================================================================
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+EventID=22
+NOT Image IN ("*\\chrome.exe","*\\firefox.exe","*\\msedge.exe","*\\svchost.exe")
+| bucket _time span=1h
+| stats count AS query_count,
+        dc(QueryName) AS unique_domains,
+        values(QueryName) AS queried_domains
+  BY _time, Image, ComputerName
+| where query_count >= 10 AND unique_domains <= 3
+| eval detection="Beacon-like DNS Traffic — High Frequency Single-Domain Queries"
+| eval mitre="T1071.004"
+| eval severity="Medium"
+| sort -query_count
+
+================================================================================
+KNOWN FALSE POSITIVES
+================================================================================
+- Cloud sync agents (OneDrive, Dropbox — excluded above)
+- Telemetry/analytics agents with regular check-in intervals
+- Windows Activation and licensing services
+- Antivirus cloud lookup services

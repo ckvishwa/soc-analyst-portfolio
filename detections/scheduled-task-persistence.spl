@@ -1,0 +1,52 @@
+| Detection Metadata                                                                    |
+| ------------------------------------------------------------------------------------- |
+| Detection Name    : Scheduled Task Persistence Creation                               |
+| Detection ID      : DET-004                                                           |
+| MITRE Tactic      : Persistence                                                       |
+| MITRE Technique   : T1053.005 — Scheduled Task/Job: Scheduled Task                   |
+| Severity          : High                                                              |
+| Data Sources      : WinEvent 4698, 4702, Sysmon Event 1                              |
+
+================================================================================
+PRIMARY QUERY — Scheduled Task Created with Suspicious Action
+================================================================================
+
+index=wineventlog sourcetype="WinEventLog:Security"
+EventID=4698
+| rex field=_raw "<Command>(?<task_command>[^<]+)</Command>"
+| rex field=_raw "<Arguments>(?<task_args>[^<]+)</Arguments>"
+| where like(task_command, "%powershell%")
+  OR like(task_command, "%cmd%")
+  OR like(task_command, "%wscript%")
+  OR like(task_command, "%cscript%")
+  OR like(task_command, "%mshta%")
+  OR like(task_command, "%rundll32%")
+  OR like(task_command, "%regsvr32%")
+| eval detection="Scheduled Task — Suspicious Command in Action"
+| eval mitre="T1053.005"
+| eval severity="High"
+| eval risk_flag=if(
+    like(task_args, "%-enc%") OR like(task_args, "%bypass%") OR like(task_args, "%hidden%"),
+    "ELEVATED — suspicious args in task",
+    "REVIEW — interpreter invoked from scheduled task"
+  )
+| table _time, ComputerName, SubjectUserName, TaskName, task_command, task_args, risk_flag
+| sort -_time
+
+================================================================================
+SECONDARY QUERY — Sysmon schtasks.exe Execution
+================================================================================
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+EventID=1
+Image="*\\schtasks.exe"
+CommandLine="*/create*"
+| table _time, ComputerName, User, CommandLine, ParentImage
+| sort -_time
+
+================================================================================
+KNOWN FALSE POSITIVES
+================================================================================
+- Windows Update and maintenance tasks (SubjectUserName = SYSTEM, known task names)
+- Software installers creating update tasks
+- Exclude pattern: NOT SubjectUserName="SYSTEM" NOT TaskName IN ("*WindowsUpdate*","*MicrosoftEdge*")

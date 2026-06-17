@@ -1,0 +1,46 @@
+| Detection Metadata                                                                    |
+| ------------------------------------------------------------------------------------- |
+| Detection Name    : Lateral Movement via SMB Admin Shares                             |
+| Detection ID      : DET-007                                                           |
+| MITRE Tactic      : Lateral Movement                                                  |
+| MITRE Technique   : T1021.002 — SMB/Windows Admin Shares                             |
+| Severity          : High                                                              |
+| Data Sources      : WinEvent 4624 (Logon Type 3), WinEvent 5140 (Share Access)       |
+
+================================================================================
+PRIMARY QUERY — Admin Share Access Detection
+================================================================================
+
+index=wineventlog sourcetype="WinEventLog:Security"
+EventID=5140
+(ShareName="*ADMIN$*" OR ShareName="*C$*" OR ShareName="*IPC$*")
+NOT IpAddress IN ("127.0.0.1","::1","192.168.10.10","192.168.10.30")
+| eval detection="Admin Share Access — Possible Lateral Movement"
+| eval mitre="T1021.002"
+| eval severity="High"
+| eval risk_level=if(
+    ShareName="*ADMIN$*" OR ShareName="*C$*",
+    "HIGH — administrative share accessed",
+    "MEDIUM — IPC$ access, possible recon"
+  )
+| table _time, ComputerName, Account_Name, IpAddress, ShareName, ObjectType, risk_level
+| sort -_time
+
+================================================================================
+SECONDARY QUERY — Network Logon + Admin Share Correlation
+================================================================================
+
+index=wineventlog sourcetype="WinEventLog:Security"
+(EventID=4624 Logon_Type=3) OR (EventID=5140)
+| transaction Account_Name maxspan=2m
+| where eventcount > 1
+| eval detection="Network Logon + Share Access — Lateral Movement Pattern"
+| table _time, Account_Name, ComputerName, eventcount
+| sort -_time
+
+================================================================================
+KNOWN FALSE POSITIVES
+================================================================================
+- IT admin remote management (RMM tools, PSExec for legitimate use)
+- Backup software accessing shares (exclude known backup server IPs)
+- File server access from known admin workstations

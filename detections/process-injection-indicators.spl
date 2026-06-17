@@ -1,0 +1,40 @@
+| Detection Metadata                                                                    |
+| ------------------------------------------------------------------------------------- |
+| Detection Name    : Process Injection Indicators                                      |
+| Detection ID      : DET-006                                                           |
+| MITRE Tactic      : Defense Evasion / Privilege Escalation                           |
+| MITRE Technique   : T1055 — Process Injection                                        |
+| Severity          : Critical                                                          |
+| Data Sources      : Sysmon Event 8 (CreateRemoteThread), Sysmon Event 10             |
+
+================================================================================
+PRIMARY QUERY — CreateRemoteThread Detection
+================================================================================
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+EventID=8
+NOT SourceImage IN (
+    "*\\svchost.exe",
+    "*\\csrss.exe",
+    "*\\wininit.exe",
+    "*\\lsass.exe",
+    "*\\MsMpEng.exe",
+    "*\\SecurityHealthService.exe"
+)
+| eval detection="CreateRemoteThread — Process Injection Indicator"
+| eval mitre="T1055"
+| eval severity="Critical"
+| eval high_value_target=if(
+    TargetImage IN ("*\\svchost.exe","*\\explorer.exe","*\\lsass.exe","*\\winlogon.exe"),
+    "HIGH RISK — injection into privileged target",
+    "REVIEW — cross-process thread creation"
+  )
+| table _time, ComputerName, User, SourceImage, TargetImage, StartAddress, StartFunction, high_value_target
+| sort -_time
+
+================================================================================
+KNOWN FALSE POSITIVES
+================================================================================
+- AV/EDR agents using hook injection (add to exclusion list after verification)
+- Debuggers and profiling tools (Visual Studio, WinDbg)
+- Some .NET and Java runtimes

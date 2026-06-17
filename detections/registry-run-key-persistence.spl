@@ -1,0 +1,46 @@
+| Detection Metadata                                                                    |
+| ------------------------------------------------------------------------------------- |
+| Detection Name    : Registry Run Key Persistence Modification                         |
+| Detection ID      : DET-005                                                           |
+| MITRE Tactic      : Persistence                                                       |
+| MITRE Technique   : T1547.001 — Registry Run Keys / Startup Folder                   |
+| Severity          : High                                                              |
+| Data Sources      : Sysmon Event 13 (RegistryValueSet)                               |
+
+================================================================================
+PRIMARY QUERY — Run Key Write Detection
+================================================================================
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+EventID=13
+(
+    TargetObject="*\\CurrentVersion\\Run\\*"
+    OR TargetObject="*\\CurrentVersion\\RunOnce\\*"
+    OR TargetObject="*\\CurrentVersion\\RunOnceEx\\*"
+    OR TargetObject="*\\CurrentVersion\\RunServices\\*"
+)
+NOT Image IN (
+    "*\\msiexec.exe",
+    "*\\setup.exe",
+    "*\\install*.exe",
+    "*\\Dropbox*.exe",
+    "*\\OneDrive.exe",
+    "*\\Teams.exe"
+)
+| eval detection="Registry Run Key — Persistence Write"
+| eval mitre="T1547.001"
+| eval severity="High"
+| eval suspicious_value=if(
+    like(Details, "%Temp%") OR like(Details, "%AppData%") OR like(Details, "%-enc%"),
+    "HIGH RISK — suspicious path or encoded content",
+    "MEDIUM — review writing process and value"
+  )
+| table _time, ComputerName, User, Image, TargetObject, Details, suspicious_value
+| sort -_time
+
+================================================================================
+KNOWN FALSE POSITIVES
+================================================================================
+- Software installers (msiexec, setup.exe — excluded above)
+- Common autostart apps: Dropbox, OneDrive, Teams, Zoom (add to exclusion list)
+- Corporate software deployed via Group Policy

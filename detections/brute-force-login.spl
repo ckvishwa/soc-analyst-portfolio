@@ -1,0 +1,67 @@
+| Detection Metadata                                                                    |
+| ------------------------------------------------------------------------------------- |
+| Detection Name    : Brute Force Login Attempt                                         |
+| Detection ID      : DET-002                                                           |
+| MITRE Tactic      : Credential Access                                                 |
+| MITRE Technique   : T1110.001 — Brute Force: Password Guessing                        |
+| Severity          : Medium (escalates to High at >= 50 failures)                      |
+| Data Sources      : Windows Security Events 4625, 4740                                |
+| Splunk Index      : index=wineventlog                                                 |
+
+================================================================================
+PRIMARY QUERY — Failed Logon Threshold Detection
+================================================================================
+
+index=wineventlog sourcetype="WinEventLog:Security"
+EventID=4625
+| bucket _time span=5m
+| stats count AS failure_count,
+        values(IpAddress) AS source_ips,
+        dc(IpAddress) AS unique_source_count,
+        values(Logon_Type) AS logon_types,
+        values(Failure_Reason) AS failure_reasons
+  BY _time, Account_Name, ComputerName
+| where failure_count >= 10
+| eval detection="Brute Force — High Failure Count"
+| eval mitre="T1110.001"
+| eval severity=case(failure_count >= 50, "Critical", failure_count >= 20, "High", 1=1, "Medium")
+| eval network_logon=if(mvfind(logon_types,"3") >= 0, "YES — possible remote brute force", "NO — local/interactive")
+| table _time, ComputerName, Account_Name, failure_count, source_ips, network_logon, severity
+| sort -failure_count
+
+================================================================================
+SECONDARY QUERY — Account Lockout Correlation
+================================================================================
+
+index=wineventlog sourcetype="WinEventLog:Security"
+EventID=4740
+| eval detection="Account Lockout — Possible Brute Force Result"
+| eval mitre="T1110.001"
+| eval severity="High"
+| table _time, ComputerName, Account_Name, CallerComputerName, severity
+| sort -_time
+
+================================================================================
+COMBINED QUERY — Failures Followed by Lockout
+================================================================================
+
+index=wineventlog sourcetype="WinEventLog:Security"
+(EventID=4625 OR EventID=4740)
+| eval event_type=case(EventID=4625, "Failed Logon", EventID=4740, "Account Lockout")
+| bucket _time span=10m
+| stats count AS event_count,
+        values(event_type) AS event_types,
+        values(IpAddress) AS source_ips
+  BY _time, Account_Name, ComputerName
+| where mvfind(event_types, "Account Lockout") >= 0
+| eval detection="Brute Force — Confirmed Lockout"
+| eval severity="High"
+| sort -_time
+
+================================================================================
+KNOWN FALSE POSITIVES
+================================================================================
+- Service accounts with stale/expired passwords (create exclusion by account name)
+- Users locked out after device password sync mismatch
+- Helpdesk testing scenarios during support calls
+Exclusion pattern: NOT Account_Name IN ("svc_backup","svc_monitor","svc_deploy")

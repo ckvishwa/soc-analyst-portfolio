@@ -1,0 +1,343 @@
+| Detection Metadata                                                                    |
+| ------------------------------------------------------------------------------------- |
+| Detection Name    : Suspicious PowerShell Execution                                   |
+| Detection ID      : DET-001                                                           |
+| Author            : SOC Detection Lab v2                                              |
+| MITRE Tactic      : Execution                                                         |
+| MITRE Technique   : T1059.001 — Command and Scripting Interpreter: PowerShell         |
+| Severity          : High                                                              |
+| Data Sources      : Sysmon Event ID 1, Windows Event ID 4104                         |
+| Splunk Index      : index=endpoint                                                    |
+| Status            : Validated                                                         |
+
+================================================================================
+DETECTION DESCRIPTION
+================================================================================
+
+This detection identifies PowerShell executions that exhibit characteristics
+commonly associated with malicious or suspicious use:
+
+  - Encoded command execution (-EncodedCommand / -enc)
+  - Execution policy bypass (-ExecutionPolicy Bypass / -ep bypass)
+  - Hidden window style (-WindowStyle Hidden / -w hidden)
+  - Download cradles (DownloadString, DownloadFile, WebClient, Invoke-WebRequest)
+  - In-memory execution (IEX, Invoke-Expression)
+  - Unusual parent processes (Office apps, script engines, browsers)
+  - Non-interactive (non-console) invocation methods
+
+Adversaries frequently use these flags to run obfuscated or downloaded
+payloads while avoiding user visibility and bypassing default execution policies.
+
+================================================================================
+DATA REQUIREMENTS
+================================================================================
+
+Required for this detection to function:
+
+  1. Sysmon installed with Event ID 1 (Process Creation) enabled
+     - Requires CommandLine logging enabled in sysmonconfig.xml
+  2. Windows Script Block Logging enabled (Event ID 4104)
+     - GPO: Computer Config > Admin Templates > Windows Components >
+       Windows PowerShell > Turn on PowerShell Script Block Logging
+  3. Splunk Universal Forwarder collecting from:
+     - Microsoft-Windows-Sysmon/Operational
+     - Microsoft-Windows-PowerShell/Operational
+
+Splunk sourcetypes expected:
+  - XmlWinEventLog:Microsoft-Windows-Sysmon/Operational
+  - XmlWinEventLog:Microsoft-Windows-PowerShell/Operational
+
+================================================================================
+PRIMARY SPL QUERY — Sysmon Event ID 1 (Process Creation)
+================================================================================
+
+| Detection: Suspicious PowerShell via Command Line Flags |
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+EventID=1
+Image IN ("*\\powershell.exe", "*\\pwsh.exe")
+(
+    CommandLine IN (
+        "*-EncodedCommand*",
+        "*-enc *",
+        "*-ExecutionPolicy Bypass*",
+        "*-ep bypass*",
+        "*-ExecutionPolicy bypass*",
+        "*-WindowStyle Hidden*",
+        "*-w hidden*",
+        "*-NonInteractive*",
+        "*-noni *",
+        "*IEX*",
+        "*Invoke-Expression*",
+        "*DownloadString*",
+        "*DownloadFile*",
+        "*WebClient*",
+        "*Invoke-WebRequest*",
+        "*Net.WebClient*",
+        "*Start-BitsTransfer*"
+    )
+)
+| eval detection_name="Suspicious PowerShell Execution"
+| eval mitre_technique="T1059.001"
+| eval severity="High"
+| eval analyst_note=case(
+    like(CommandLine, "%-EncodedCommand%") OR like(CommandLine, "%-enc %"),
+        "PRIORITY: Encoded command - decode and inspect payload immediately",
+    like(CommandLine, "%DownloadString%") OR like(CommandLine, "%WebClient%"),
+        "PRIORITY: Download cradle detected - check network logs for destination",
+    like(CommandLine, "%IEX%") OR like(CommandLine, "%Invoke-Expression%"),
+        "PRIORITY: In-memory execution - check script block logs for full payload",
+    1=1,
+        "Review CommandLine field for suspicious intent"
+  )
+| table _time, ComputerName, User, Image, ParentImage, CommandLine,
+        ProcessId, ParentProcessId, severity, mitre_technique, analyst_note
+| sort -_time
+
+================================================================================
+SECONDARY SPL QUERY — Suspicious PowerShell Parent Process
+================================================================================
+
+| Detection: PowerShell Spawned from Unusual Parent |
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+EventID=1
+Image IN ("*\\powershell.exe", "*\\pwsh.exe")
+ParentImage IN (
+    "*\\winword.exe",
+    "*\\excel.exe",
+    "*\\outlook.exe",
+    "*\\mspub.exe",
+    "*\\visio.exe",
+    "*\\onenote.exe",
+    "*\\wscript.exe",
+    "*\\cscript.exe",
+    "*\\mshta.exe",
+    "*\\rundll32.exe",
+    "*\\regsvr32.exe",
+    "*\\explorer.exe",
+    "*\\svchost.exe",
+    "*\\taskeng.exe",
+    "*\\wmiprvse.exe"
+)
+| eval detection_name="PowerShell Spawned from Suspicious Parent"
+| eval mitre_technique="T1059.001"
+| eval severity="High"
+| eval risk_score=case(
+    ParentImage IN ("*\\winword.exe","*\\excel.exe","*\\outlook.exe"), 90,
+    ParentImage IN ("*\\wscript.exe","*\\cscript.exe","*\\mshta.exe"), 85,
+    ParentImage IN ("*\\rundll32.exe","*\\regsvr32.exe"), 80,
+    1=1, 70
+  )
+| table _time, ComputerName, User, Image, ParentImage, CommandLine,
+        ProcessId, ParentProcessId, risk_score, mitre_technique
+| sort -risk_score, -_time
+
+================================================================================
+TERTIARY SPL QUERY — Script Block Logging (Event ID 4104)
+================================================================================
+
+| Detection: Suspicious Script Block Content |
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-PowerShell/Operational"
+EventID=4104
+(
+    ScriptBlockText IN (
+        "*IEX*",
+        "*Invoke-Expression*",
+        "*Invoke-Mimikatz*",
+        "*Invoke-Shellcode*",
+        "*Net.WebClient*",
+        "*DownloadString*",
+        "*DownloadFile*",
+        "*FromBase64String*",
+        "*[Convert]::FromBase64*",
+        "*-bxor*",
+        "*Marshal.Copy*",
+        "*VirtualAlloc*",
+        "*AmsiBypass*",
+        "*amsiInitFailed*",
+        "*[Ref].Assembly.GetType*"
+    )
+)
+| eval detection_name="Malicious PowerShell Script Block Content"
+| eval mitre_technique="T1059.001"
+| eval severity="Critical"
+| eval analyst_priority=case(
+    like(ScriptBlockText, "%Invoke-Mimikatz%"), "CRITICAL - Possible credential theft",
+    like(ScriptBlockText, "%AmsiBypass%") OR like(ScriptBlockText, "%amsiInitFailed%"),
+        "CRITICAL - AMSI bypass attempt",
+    like(ScriptBlockText, "%VirtualAlloc%") OR like(ScriptBlockText, "%Marshal.Copy%"),
+        "HIGH - Shellcode loading pattern",
+    like(ScriptBlockText, "%FromBase64String%"), "HIGH - Base64 decode in script",
+    1=1, "MEDIUM - Review script block content"
+  )
+| table _time, ComputerName, UserID, ScriptBlockId, ScriptBlockText,
+        severity, analyst_priority, mitre_technique
+| sort -severity, -_time
+
+================================================================================
+COMBINED HIGH-CONFIDENCE QUERY (Recommended for Alerting)
+================================================================================
+
+| Use this as your primary alert rule — correlates process + content |
+
+index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+EventID=1
+Image IN ("*\\powershell.exe", "*\\pwsh.exe")
+| search
+    CommandLine="*-EncodedCommand*" OR
+    CommandLine="*-enc *" OR
+    CommandLine="*-ExecutionPolicy Bypass*" OR
+    (CommandLine="*IEX*" CommandLine="*DownloadString*") OR
+    (CommandLine="*WebClient*" CommandLine="*DownloadString*") OR
+    ParentImage IN ("*\\winword.exe","*\\excel.exe","*\\wscript.exe","*\\mshta.exe")
+| eval detection="Suspicious PowerShell - Combined"
+| eval mitre="T1059.001"
+| eval severity="High"
+| eval triage_priority=case(
+    ParentImage IN ("*\\winword.exe","*\\excel.exe"), "P1 - Office macro spawn",
+    like(CommandLine, "%-EncodedCommand%"), "P1 - Encoded payload",
+    like(CommandLine, "%DownloadString%"), "P2 - Download cradle",
+    1=1, "P2 - Review required"
+  )
+| table _time, ComputerName, User, ParentImage, Image, CommandLine,
+        ProcessId, ParentProcessId, triage_priority
+| sort -_time
+
+================================================================================
+ANALYST TRIAGE STEPS
+================================================================================
+
+When this alert fires, execute these steps in order:
+
+STEP 1 — SCOPE THE PROCESS CONTEXT
+  Run in Splunk:
+    index=endpoint ComputerName=<affected_host> ProcessId=<pid> EventID IN (1,3,11,12,13,23)
+    | sort _time
+  Purpose: Get the full process timeline — what did this PowerShell process do after it started?
+
+STEP 2 — IDENTIFY THE PARENT
+  Check ParentImage and ParentCommandLine.
+  Questions:
+    - Is the parent a legitimate process (explorer, services, scheduled task)?
+    - Is the parent an Office application, script engine, or browser?
+    - What is the parent's PID? Look it up in the process chain.
+
+STEP 3 — DECODE ENCODED COMMANDS (if -EncodedCommand detected)
+  In PowerShell (on an isolated analysis machine):
+    [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String("<base64_string>"))
+  Alternatively, use CyberChef (https://gchq.github.io/CyberChef/) with:
+    Recipe: From Base64 → Decode Text (UTF-16LE)
+
+STEP 4 — CHECK NETWORK ACTIVITY (if download cradle detected)
+  Run in Splunk:
+    index=endpoint ComputerName=<affected_host> EventID=3 ProcessId=<pid>
+    | table _time, DestinationIp, DestinationPort, DestinationHostname
+  Check destination IP/domain against threat intelligence.
+
+STEP 5 — CHECK SCRIPT BLOCK LOGS
+    index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-PowerShell/Operational"
+    EventID=4104 ComputerName=<affected_host>
+    | sort _time
+  Reconstruct the full script if it was broken across multiple blocks (join on ScriptBlockId).
+
+STEP 6 — CHECK FOR PERSISTENCE OR FOLLOW-ON ACTIVITY
+  Look for:
+    - New scheduled tasks (Event ID 4698)
+    - Registry Run key changes (Sysmon Event ID 13)
+    - New files written to temp/AppData (Sysmon Event ID 11)
+    - Network connections to external IPs (Sysmon Event ID 3)
+
+STEP 7 — ASSESS IMPACT AND DECIDE
+  Options:
+    A) FALSE POSITIVE  → Document why, add exclusion, close alert
+    B) TRUE POSITIVE   → Escalate, isolate host, open formal investigation report
+    C) INCONCLUSIVE    → Escalate to L2 with full evidence package
+
+================================================================================
+KNOWN FALSE POSITIVES
+================================================================================
+
+1. IT AUTOMATION SCRIPTS
+   Pattern: Administrator accounts running -ExecutionPolicy Bypass with signed scripts
+   Handling: Create exclusion for known admin users + signed script paths
+   SPL exclusion:
+     NOT (User IN ("domain\\it_admin","domain\\svc_deploy") AND
+          CommandLine="*-File C:\\Scripts\\*")
+
+2. SOFTWARE DEPLOYMENT TOOLS
+   Pattern: SCCM/ConfigMgr, Intune, or third-party tools invoking PowerShell silently
+   Handling: Exclude known deployment service accounts and executable paths
+   SPL exclusion:
+     NOT (ParentImage IN ("*\\ccmexec.exe","*\\ServiceUI.exe"))
+
+3. WINDOWS UPDATE / PATCHING
+   Pattern: PowerShell invoked by TrustedInstaller or SYSTEM during patching windows
+   Handling: Create time-based exclusion during maintenance windows
+   SPL exclusion:
+     NOT (User="NT AUTHORITY\\SYSTEM" AND
+          ParentImage="*\\TrustedInstaller.exe")
+
+4. DEVELOPER TOOLS
+   Pattern: VS Code, Visual Studio, JetBrains running PowerShell with bypass during testing
+   Handling: Exclude known developer workstations by hostname or OU
+   SPL exclusion:
+     NOT ComputerName IN ("DEV-WS-001","DEV-WS-002")
+
+================================================================================
+TUNING RECOMMENDATIONS
+================================================================================
+
+Priority 1 (Do First):
+  - Build a whitelist of known admin service accounts and exclude them
+  - Exclude SYSTEM-context PowerShell from patching/maintenance processes
+  - Verify script block logging is enabled — without it, DET-001c is blind
+
+Priority 2 (After Baseline):
+  - Run the query in search mode for 72 hours before enabling as an alert
+  - Document every false positive hit with the triggering CommandLine
+  - Build a lookup table of approved encoded commands (scheduled tasks, etc.)
+
+Priority 3 (Advanced Tuning):
+  - Add risk scoring by combining parent process + commandline flags
+  - Correlate with Sysmon Event ID 3 (network) to prioritize download cradles
+  - Add lookup against threat intel for known-bad PowerShell C2 strings
+
+================================================================================
+RESPONSE RECOMMENDATION
+================================================================================
+
+TRUE POSITIVE RESPONSE:
+  Immediate (0-15 min):
+    1. Isolate affected endpoint from network
+    2. Preserve memory image if possible (before reboot)
+    3. Pull full Splunk timeline for affected host
+    4. Notify SOC lead and open P1 incident ticket
+
+  Short-term (15-60 min):
+    5. Decode all encoded commands found
+    6. Check for persistence mechanisms (scheduled tasks, run keys, services)
+    7. Identify lateral movement from affected host (Type 3 logons outbound)
+    8. Check for data staging or exfiltration indicators
+
+  Recovery:
+    9. Rebuild endpoint from known-good image if compromise confirmed
+   10. Reset credentials for affected user accounts
+   11. Review AD for new accounts or group membership changes
+
+================================================================================
+LAB SIMULATION REFERENCE
+================================================================================
+
+To generate telemetry for this detection in the lab:
+
+  Safe simulation command (Windows 10 lab VM only):
+    powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand
+    V3JpdGUtSG9zdCAiTGFiIHRlc3QgLSBub3QgbWFsaWNpb3Vz"
+
+  The above decodes to: Write-Host "Lab test - not malicious"
+
+  This will trigger DET-001a (command line flags) without doing anything harmful.
+
+  See full simulation: attack-simulations/01-powershell-suspicious-execution.md
