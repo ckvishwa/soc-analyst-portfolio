@@ -80,6 +80,7 @@
 |---|-----------|----------------|--------|---------|-----------|--------|
 | 01 | PowerShell Suspicious Execution | T1059.001 | Execution | Win10 | DET-001 ✅ Fired | ✅ |
 | 02 | Brute Force Login | T1110.001 | Credential Access | **Kali Linux** | DET-002 ✅ Fired | ✅ |
+**See full lab stack in action:** [DET-008 — All 3 VMs active with DNS beacon detection firing](screenshots/splunk-searches/det-008-dns-beacon-all-vms.png)
 | 03 | Credential Dumping Simulation | T1003.001 | Credential Access | Win10 | DET-003 ✅ Fired | ✅ |
 | 04 | Scheduled Task Persistence | T1053.005 | Persistence | Win10 | DET-004 ✅ Fired | ✅ |
 | 05 | Registry Run Key Persistence | T1547.001 | Persistence | Win10 | DET-005 ✅ Fired | ✅ |
@@ -239,7 +240,7 @@ artifacts, decision)
 | SIM-005 Registry | reg.exe writing to HKCU\...\Run — Sysmon Event 13 | HIGH |
 | SIM-006 Injection | mavinject.exe → notepad.exe CreateRemoteThread — Sysmon Event 8 | CRITICAL |
 | SIM-007 Lateral | SMB ADMIN$ access from Kali 192.168.10.50 — Event 4624 Type 3 on DC | HIGH |
-| SIM-008 Beaconing | backgroundTaskHost.exe — 5+ periodic DNS queries — Sysmon Event 22 | MEDIUM |
+| SIM-008 Beaconing | backgroundTaskHost.exe — 15 periodic DNS queries to soclab.local at 5-second intervals — Sysmon Event 22 — DET-008 fired 85 events — [screenshot](screenshots/splunk-searches/det-008-dns-beacon-all-vms.png) | MEDIUM |
 | Lab 1 Recon | Recon commands observed under SYSTEM and user context — possible dual foothold or single attacker in multiple security contexts | HIGH |
 | Lab 2 PowerShell | RuntimeBroker.exe → PowerShell — anomalous parent-child relationship — T1055 suspected, not confirmed without Event 8/10 | HIGH |
 | Lab 3 Brute Force | 10 failed logon attempts in 5 sec from localhost via svchost | CRITICAL |
