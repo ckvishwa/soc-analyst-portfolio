@@ -9,7 +9,7 @@
 **Severity:** HIGH
 **MITRE:** T1033, T1016, T1082
 ```splunk
-index=main EventCode=1
+index=endpoint EventCode=1
 | search CommandLine="*whoami*" 
   OR CommandLine="*net user*" 
   OR CommandLine="*ipconfig*" 
@@ -30,7 +30,7 @@ index=main EventCode=1
 **Severity:** CRITICAL
 **MITRE:** T1059.001, T1027
 ```splunk
-index=main EventCode=1 Image="*powershell*"
+index=endpoint EventCode=1 Image="*powershell*"
 NOT Image="*SplunkUniversalForwarder*"
 NOT Image="*Splunk\bin*"
 | search CommandLine="*IEX*" 
@@ -50,7 +50,7 @@ NOT Image="*Splunk\bin*"
 **Severity:** CRITICAL
 **MITRE:** T1055
 ```splunk
-index=main EventCode=1 Image="*powershell*"
+index=endpoint EventCode=1 Image="*powershell*"
 | search ParentImage="*RuntimeBroker*" 
   OR ParentImage="*explorer.exe*"
   OR ParentImage="*mshta.exe*"
@@ -68,7 +68,7 @@ index=main EventCode=1 Image="*powershell*"
 **Severity:** HIGH
 **MITRE:** T1110.001
 ```splunk
-index=main EventCode=4625
+index=endpoint EventCode=4625
 | rex field=_raw "Account Name:\s+(?<TargetUser>\S+)"
 | bucket _time span=1m
 | stats count by _time, TargetUser
@@ -85,7 +85,7 @@ index=main EventCode=4625
 **Severity:** CRITICAL
 **MITRE:** T1078
 ```splunk
-index=main (EventCode=4625 OR EventCode=4624)
+index=endpoint (EventCode=4625 OR EventCode=4624)
 | rex field=_raw "Account Name:\s+(?<TargetUser>\S+)"
 | transaction TargetUser maxspan=5m
 | search EventCode=4625 AND EventCode=4624
@@ -102,7 +102,7 @@ index=main (EventCode=4625 OR EventCode=4624)
 **Severity:** CRITICAL
 **MITRE:** T1110.001
 ```splunk
-index=main EventCode=4625
+index=endpoint EventCode=4625
 | rex field=_raw "Source Network Address:\s+(?<SrcIP>\S+)"
 | rex field=_raw "Account Name:\s+(?<TargetUser>\S+)"
 | where SrcIP="::1" OR SrcIP="127.0.0.1"
