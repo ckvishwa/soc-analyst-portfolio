@@ -10,7 +10,7 @@
 | **Detection ID** | DET-001 |
 | **Report ID** | IR-2024-001 |
 | **Date / Time (UTC)** | 2024-11-14 — 14:23:07 UTC |
-| **Analyst** | [Your Name] |
+| **Analyst** | VISHVA CK |
 | **Analyst Tier** | SOC L1 |
 | **Severity** | High |
 | **Affected Host** | WIN10-VICTIM (192.168.10.20) |
