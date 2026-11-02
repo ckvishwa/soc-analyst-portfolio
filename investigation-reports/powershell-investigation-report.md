@@ -273,7 +273,7 @@ Based on this investigation, the following tuning notes were added to the detect
 | Field | Value |
 |-------|-------|
 | **Analyst** | Vishva Teja Chikoti |
-| **Review Date** | [Date] |
+| **Review Date** | Not recorded |
 | **Disposition** | True Positive — Lab Simulation |
 | **Escalation Required** | No |
 | **Ticket Closed** | Yes |
