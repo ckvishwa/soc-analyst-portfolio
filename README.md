@@ -21,8 +21,8 @@
 | Total Labs / Simulations | 14 (8 enterprise AD + 6 standalone) |
 | Real Security Events Analyzed | 8,000+ Windows + Sysmon events |
 | MITRE ATT&CK Techniques Mapped | 25 techniques across 9 tactics |
-| Custom SPL Detection Rules | 14 rules |
-| Investigation Reports | 8 structured analyst reports |
+| Committed SPL Detection Files | 8 files (DET-001 through DET-008) |
+| Investigation Reports | Six investigation reports and an executive summary |
 | Attack Phases Covered | Initial Access → Recon → Execution → Credential Access → Lateral Movement → Persistence → C2 |
 | Lab Environment | 3-VM Active Directory domain (DC + Endpoint + Kali attacker) |
 | Attacker Machine | Kali Linux — real cross-machine attacks |
