@@ -9,7 +9,7 @@
 | **Alert Name** | Suspicious PowerShell Execution — Encoded Command + Download Cradle |
 | **Detection ID** | DET-001 |
 | **Report ID** | IR-2024-001 |
-| **Date / Time (UTC)** | 2024-11-14 — 14:23:07 UTC |
+| **Date / Time (UTC)** | Date unverified — 14:23:07 UTC is the scenario time recorded in this report |
 | **Analyst** | VISHVA CK |
 | **Analyst Tier** | SOC L1 |
 | **Severity** | High |
@@ -23,7 +23,7 @@
 
 ## Executive Summary
 
-At 14:23:07 UTC on 2024-11-14, Splunk detection rule DET-001 (Suspicious PowerShell Execution) fired against endpoint WIN10-VICTIM. Investigation confirmed that a PowerShell process was launched from a suspicious parent (`wscript.exe`) using the `-ExecutionPolicy Bypass` and `-EncodedCommand` flags. The decoded payload contained a download cradle (`Net.WebClient.DownloadString`) targeting an internal lab web server configured for this simulation. No actual malicious payload was involved — this was a controlled Atomic Red Team simulation using safe test commands. The detection rule performed as expected. Investigation complete.
+At 14:23:07 UTC in the documented lab scenario (calendar date unverified), Splunk detection rule DET-001 (Suspicious PowerShell Execution) fired against endpoint WIN10-VICTIM. Investigation confirmed that a PowerShell process was launched from a suspicious parent (`wscript.exe`) using the `-ExecutionPolicy Bypass` and `-EncodedCommand` flags. The decoded payload contained a download cradle (`Net.WebClient.DownloadString`) targeting an internal lab web server configured for this simulation. No actual malicious payload was involved — this was a controlled Atomic Red Team simulation using safe test commands. The detection rule performed as expected. Investigation complete.
 
 ---
 
@@ -39,7 +39,7 @@ ComputerName="WIN10-VICTIM"
 | sort -_time
 ```
 
-**Alert fired at:** 2024-11-14 14:23:07 UTC  
+**Alert time recorded in report:** 14:23:07 UTC (calendar date unverified)  
 **Events returned:** 1  
 **Alert severity:** High
 
@@ -272,7 +272,7 @@ Based on this investigation, the following tuning notes were added to the detect
 
 | Field | Value |
 |-------|-------|
-| **Analyst** | [Your Name] |
+| **Analyst** | Vishva Teja Chikoti |
 | **Review Date** | [Date] |
 | **Disposition** | True Positive — Lab Simulation |
 | **Escalation Required** | No |
