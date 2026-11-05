@@ -80,13 +80,14 @@
 |---|-----------|----------------|--------|---------|-----------|--------|
 | 01 | PowerShell Suspicious Execution | T1059.001 | Execution | Win10 | DET-001 ✅ Fired | ✅ |
 | 02 | Brute Force Login | T1110.001 | Credential Access | **Kali Linux** | DET-002 ✅ Fired | ✅ |
-**See full lab stack in action:** [DET-008 — All 3 VMs active with DNS beacon detection firing](screenshots/splunk-searches/det-008-dns-beacon-all-vms.png)
 | 03 | Credential Dumping Simulation | T1003.001 | Credential Access | Win10 | DET-003 ✅ Fired | ✅ |
 | 04 | Scheduled Task Persistence | T1053.005 | Persistence | Win10 | DET-004 ✅ Fired | ✅ |
 | 05 | Registry Run Key Persistence | T1547.001 | Persistence | Win10 | DET-005 ✅ Fired | ✅ |
 | 06 | Process Injection Indicators | T1055 | Defense Evasion | Win10 | DET-006 ✅ Fired | ✅ |
 | 07 | Lateral Movement via SMB | T1021.002 | Lateral Movement | **Kali Linux** | DET-007 ✅ Fired | ✅ |
 | 08 | DNS/HTTP Beacon-like Traffic | T1071.001/004 | Command & Control | Win10 | DET-008 ✅ Fired | ✅ |
+
+**See the lab stack:** [DET-008 screenshot with all three VMs and the DNS beacon detection](screenshots/splunk-searches/det-008-dns-beacon-all-vms.png).
 
 ### Validated Detections
 
