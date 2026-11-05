@@ -8,7 +8,7 @@
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 
 **Vishva Teja Chikoti** | Cybersecurity | SOC Analyst
-[LinkedIn](https://linkedin.com/in/vishvack) • [Email](mailto:vchik2@unh.newhaven.edu) • Open to SOC Analyst L1 / Detection Engineer roles
+[LinkedIn](https://linkedin.com/in/vishvack) • [Email](mailto:vishvatejack@gmail.com) • Open to SOC Analyst L1 / Detection Engineer roles
 
 > A multi-VM enterprise SOC lab built on Active Directory with a dedicated Kali Linux attacker machine. Real attacks simulated across the network, detected using Sysmon + Splunk, and documented as structured analyst investigations. Covers the full detection engineering lifecycle: simulate → collect → detect → investigate → tune → report.
 
@@ -91,6 +91,8 @@
 ### Validated Detections
 
 **DET-001 — Suspicious PowerShell Execution** ✅ Live in Splunk
+
+**Tuning note:** The first version also matched activity from the Splunk Universal Forwarder. I reviewed that baseline, narrowed the rule to exclude the benign forwarder activity, then reran the controlled PowerShell simulation to confirm DET-001 still fired. Enabling and validating PowerShell Script Block Logging (Event ID 4104) is the next telemetry step; this repository does not claim that step is complete.
 
 ```spl
 index=endpoint sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
